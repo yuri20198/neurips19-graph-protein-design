@@ -1,6 +1,8 @@
-import os, time, gzip, urllib, json
+import os
+from urllib.request import urlopen
+
 import mmtf
-from collections import defaultdict
+
 
 def download_cached(url, target_location):
     """ Download with caching """
@@ -10,7 +12,7 @@ def download_cached(url, target_location):
             os.makedirs(target_dir)
 
         # Use MMTF for speed
-        response = urllib.request.urlopen(url)
+        response = urlopen(url)
         size = int(float(response.headers['Content-Length']) / 1e3)
         print('Downloading {}, {} KB'.format(target_location, size))
         with open(target_location, 'wb') as f:
@@ -27,21 +29,19 @@ def mmtf_fetch(pdb, cache_dir='cath/mmtf/'):
     return mmtf_record
 
 
-def mmtf_parse(pdb_id, chain, target_atoms = ['N', 'CA', 'C', 'O']):
+def mmtf_parse(pdb_id, chain, target_atoms=('N', 'CA', 'C', 'O')):
     """ Parse mmtf file to extract C-alpha coordinates """
     # MMTF traversal derived from the specification 
     # https://github.com/rcsb/mmtf/blob/master/spec.md
     A = mmtf_fetch(pdb_id)
 
     # Build a dictionary
-    mmtf_dict = {}
-    mmtf_dict['seq'] = []
-    mmtf_dict['coords'] = {code:[] for code in target_atoms}
+    mmtf_dict = {'seq': [], 'coords': {code: [] for code in target_atoms}}
 
     # Get chain of interest from Model 0
     model_ix, chain_ix, group_ix, atom_ix = 0, 0, 0, 0
     target_chain_ix, target_entity = next(
-        (i, entity) for entity in A.entity_list for i in entity['chainIndexList'] 
+        (i, entity) for entity in A.entity_list for i in entity['chainIndexList']
         if entity['type'] == 'polymer' and A.chain_name_list[i] == chain
     )
 
@@ -49,13 +49,13 @@ def mmtf_parse(pdb_id, chain, target_atoms = ['N', 'CA', 'C', 'O']):
     num_chains = A.chains_per_model[model_ix]
     mmtf_dict['num_chains'] = num_chains
     for ii in range(num_chains):
-        chain_name = A.chain_name_list[chain_ix]
+        # chain_name = A.chain_name_list[chain_ix]
 
         # Chain of interest?
         if chain_ix == target_chain_ix:
             mmtf_dict['seq'] = target_entity['sequence']
             coords_null = [[float('nan')] * 3] * len(mmtf_dict['seq'])
-            mmtf_dict['coords'] = {code : list(coords_null) for code in target_atoms}
+            mmtf_dict['coords'] = {code: list(coords_null) for code in target_atoms}
 
             # Traverse groups, storing data
             chain_group_count = A.groups_per_chain[chain_ix]

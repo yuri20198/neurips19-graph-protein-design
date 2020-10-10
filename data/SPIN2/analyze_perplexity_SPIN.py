@@ -1,7 +1,7 @@
-import glob, json
-import numpy as np
-import pandas as pd
+import json
 
+import numpy as np
+from pandas import read_table
 
 suffix = 'sc'
 test_set = 'test_split_' + suffix + '.json'
@@ -14,17 +14,16 @@ spin_files = [result_folder + name + '.spin2' for name in test_names]
 spin_data = {}
 for spin_file in spin_files:
     name = spin_file.split('/')[1][:6]
-    spin_data[name] = pd.read_table(spin_file, sep=r"\s+", engine='python')
+    spin_data[name] = read_table(spin_file, sep=r"\s+", engine='python')
     print(spin_file, name)
 
+
 def _perplexity(seq, table):
-    logprobs = []
-    probs = []
-    correct = []
-    for i,c in enumerate(seq):
+    logprobs, probs, correct = [], [], []
+    for i, c in enumerate(seq):
         # Table is listed to 100 and offset by one
-        prob = table.loc[i+1,:]
-        prob = prob / prob.sum()
+        prob = table.loc[i + 1, :]
+        prob /= prob.sum()
 
         correct.append(prob.idxmax() == c)
         probs.append(prob[c])
@@ -32,13 +31,12 @@ def _perplexity(seq, table):
         logprobs.append(logp)
     return logprobs, probs, correct
 
+
 # Perplexity time
-logprobs_total = []
-probs_total = []
-correct_total = []
+logprobs_total, probs_total, correct_total = [], [], []
 chains = {}
 chain_file = '../../../../../dataset/pfam32/chain_set.json.txt'
-with open(chain_file,'r') as f:
+with open(chain_file, 'r') as f:
     for line in f:
         chain_name, jsons = line.split('\t')
         if chain_name in spin_data:

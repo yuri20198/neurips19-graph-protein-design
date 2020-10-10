@@ -1,24 +1,22 @@
 from __future__ import print_function
-import json, time, os, sys, glob
+
+import json
 
 import numpy as np
 import torch
-from torch import optim
-from torch.utils.data import DataLoader
-from torch.utils.data.dataset import random_split, Subset
+from torch.utils.data.dataset import Subset
 
-## Library code
-sys.path.insert(0, '..')
-from struct2seq import *
-from utils import *
-
+from gpn.experiments.utils import setup_cli_model, featurize, loss_nll
+from gpn.struct2seq.data import StructureDataset, StructureLoader
+from gpn.struct2seq.noam_opt import get_std_opt
 
 # Simulate extra arguments
-# sys.argv = [sys.argv[0], '--features', 'full', '--restore', 'log/h128_full/epoch90_step61740.pt', '--file_splits', '../data/SPIN2/test_split_sc.json']
+# sys.argv = [sys.argv[0], '--features', 'full', '--restore', 'log/h128_full/epoch90_step61740.pt', '--file_splits',
+#             '../data/SPIN2/test_split_sc.json']
 
 args, device, model = setup_cli_model()
 
-optimizer = noam_opt.get_std_opt(model.parameters(), args.hidden)
+optimizer = get_std_opt(model.parameters(), args.hidden)
 criterion = torch.nn.NLLLoss(reduction='none')
 
 # Load the test set from a splits file
@@ -26,11 +24,11 @@ with open(args.file_splits) as f:
     dataset_splits = json.load(f)
 test_names = dataset_splits['test']
 # Load the dataset
-dataset = data.StructureDataset(args.file_data, truncate=None, max_length=500)
+dataset = StructureDataset(args.file_data, truncate=None, max_length=500)
 # Split the dataset
 dataset_indices = {d['name']:i for i,d in enumerate(dataset)}
 test_set = Subset(dataset, [dataset_indices[name] for name in test_names])
-loader_test = data.StructureLoader(test_set, batch_size=args.batch_tokens)
+loader_test = StructureLoader(test_set, batch_size=args.batch_tokens)
 print('Testing {} domains'.format(len(test_set)))
 
 

@@ -1,11 +1,13 @@
-import os, time, gzip, json
-from util_mmtf import *
+import json
 from collections import defaultdict
+from time import time
+
+from gpn.data.mmtf_util import download_cached, mmtf_parse
 
 MAX_LENGTH = 500
 
 # CATH base URL
-cath_base_url = 'http://download.cathdb.info/cath/releases/all-releases/v4_2_0/'
+# cath_base_url = 'http://download.cathdb.info/cath/releases/all-releases/v4_2_0/'
 cath_base_url = 'http://download.cathdb.info/cath/releases/latest-release/'
 
 # CATH non-redundant set at 40% identity
@@ -17,7 +19,7 @@ download_cached(cath_nr40_url, cath_nr40_file)
 with open(cath_nr40_file) as f:
     cath_nr40_ids = f.read().split('\n')[:-1]
 cath_nr40_chains = list(set(cath_id[:5] for cath_id in cath_nr40_ids))
-chain_set = sorted([(name[:4], name[4]) for name in  cath_nr40_chains])
+chain_set = sorted([(name[:4], name[4]) for name in cath_nr40_chains])
 
 # CATH hierarchical classification
 cath_domain_fn = 'cath-domain-list.txt'
@@ -27,14 +29,14 @@ download_cached(cath_domain_url, cath_domain_file)
 
 # CATH topologies
 cath_nodes = defaultdict(list)
-with open(cath_domain_file,'r') as f:
+with open(cath_domain_file, 'r') as f:
     lines = [line.strip() for line in f if not line.startswith('#')]
     for line in lines:
         entries = line.split()
         cath_id, cath_node = entries[0], '.'.join(entries[1:4])
         chain_name = cath_id[:4] + '.' + cath_id[4]
         cath_nodes[chain_name].append(cath_node)
-cath_nodes = {key:list(set(val)) for key,val in cath_nodes.items()}
+cath_nodes = {key: list(set(val)) for key, val in cath_nodes.items()}
 
 # Build dataset
 dataset = []
@@ -42,9 +44,9 @@ for chain_ix, (pdb, chain) in enumerate(chain_set):
     try:
         # Load and parse coordinates
         print(chain_ix, pdb, chain)
-        start = time.time()
+        start = time()
         chain_dict = mmtf_parse(pdb, chain)
-        stop = time.time() - start
+        stop = time() - start
 
         if len(chain_dict['seq']) <= MAX_LENGTH:
             chain_name = pdb + '.' + chain

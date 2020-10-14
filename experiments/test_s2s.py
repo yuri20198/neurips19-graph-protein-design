@@ -26,11 +26,10 @@ test_names = dataset_splits['test']
 # Load the dataset
 dataset = StructureDataset(args.file_data, truncate=None, max_length=500)
 # Split the dataset
-dataset_indices = {d['name']:i for i,d in enumerate(dataset)}
+dataset_indices = {d['name']: i for i, d in enumerate(dataset)}
 test_set = Subset(dataset, [dataset_indices[name] for name in test_names])
 loader_test = StructureLoader(test_set, batch_size=args.batch_tokens)
 print('Testing {} domains'.format(len(test_set)))
-
 
 total_step = 0
 # Validation epoch
@@ -46,7 +45,7 @@ with torch.no_grad():
 
         loss_per_datum = torch.sum(mask * loss, 1) / torch.sum(mask, 1)
         print(loss_per_datum.cpu().data.numpy(), loss_per_datum.std())
-        print(ix, len(batch),[b['name'] for b in batch])
+        print(ix, len(batch), [b['name'] for b in batch])
 
         # Accumulate
         test_sum += torch.sum(loss * mask).cpu().data.numpy()

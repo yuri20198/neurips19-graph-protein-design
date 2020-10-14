@@ -1,5 +1,5 @@
-.DS_Store
-
 .idea/
 __pycache__/
 data/cath/mmtf/*.mmtf.gz
+data/chain_set.jsonl
+experiments/log/

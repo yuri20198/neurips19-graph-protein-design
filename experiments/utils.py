@@ -87,7 +87,7 @@ def setup_cli_model():
     args = get_args()
     device = setup_device_rng(args)
     model = setup_model(vars(args), device)
-    if args.restore is not '':
+    if args.restore != '':
         load_checkpoint(args.restore, model)
 
     return args, device, model
